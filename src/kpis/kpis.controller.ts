@@ -48,4 +48,8 @@ export class KpisController {
     getDashboardMetrics(@Request() req) {
         return this.kpisService.getDashboardMetrics(req.user.id);
     }
+    @Patch('definitions/:id/progress')
+    updateProgress(@Request() req, @Param('id') id: string, @Body('increment') increment: number) {
+        return this.kpisService.updateProgress(req.user.id, id, parseFloat(increment.toString()));
+    }
 }

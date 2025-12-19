@@ -101,4 +101,46 @@ export class KpisService {
             };
         });
     }
+    async updateProgress(userId: string, definitionId: string, increment: number) {
+        // 1. Ensure ownership
+        await this.findOneDefinition(userId, definitionId);
+
+        // 2. Find or Create TODAY's log
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        let log = await this.prisma.kPI_Log.findFirst({
+            where: {
+                kpiDefinitionId: definitionId,
+                date: {
+                    gte: todayStart,
+                    lte: todayEnd,
+                }
+            }
+        });
+
+        if (log) {
+            // Update existing log
+            return this.prisma.kPI_Log.update({
+                where: { id: log.id },
+                data: {
+                    actualValue: { increment: increment }
+                }
+            });
+        } else {
+            // Create new log
+            return this.prisma.kPI_Log.create({
+                data: {
+                    date: new Date(),
+                    kpiDefinitionId: definitionId,
+                    plannedValue: 0, // Default
+                    actualValue: increment,
+                    value_recorded: increment, // Legacy field, keep sync
+                }
+            });
+        }
+    }
 }
