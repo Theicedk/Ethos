@@ -1,0 +1,128 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(uuid())
+  email          String           @unique
+  password_hash  String
+  created_at     DateTime         @default(now())
+  focusAreas     FocusArea[]
+  kpiDefinitions KPI_Definition[]
+  contacts       Contact[]
+  timeBlocks     TimeBlock[]
+}
+
+model FocusArea {
+  id         String      @id @default(uuid())
+  title      String
+  color_code String
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  goals      Goal[]
+  timeBlocks TimeBlock[]
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Goal {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  deadline    DateTime
+  status      GoalStatus
+  focusAreaId String
+  focusArea   FocusArea   @relation(fields: [focusAreaId], references: [id])
+  timeBlocks  TimeBlock[]
+}
+
+enum KpiType {
+  NUMERIC
+  BOOLEAN
+  RATING
+}
+
+enum KpiFrequency {
+  DAILY
+  WEEKLY
+}
+
+model KPI_Definition {
+  id           String       @id @default(uuid())
+  title        String
+  type         KpiType
+  target_value Float?
+  frequency    KpiFrequency
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  logs         KPI_Log[]
+}
+
+model KPI_Log {
+  id              String         @id @default(uuid())
+  date            DateTime
+  value_recorded  Float
+  plannedValue    Float          @default(0)
+  actualValue     Float          @default(0)
+  notes           String?
+  kpiDefinitionId String
+  kpiDefinition   KPI_Definition @relation(fields: [kpiDefinitionId], references: [id])
+}
+
+enum ContactStatus {
+  ACTIVE
+  DORMANT
+}
+
+model Contact {
+  id                String        @id @default(uuid())
+  name              String
+  category          String
+  relationship_type String
+  status            ContactStatus
+  address           String?
+  latitude          Float?
+  longitude         Float?
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  interactions      Interaction[]
+}
+
+enum InteractionType {
+  CALL
+  MEETING
+}
+
+model Interaction {
+  id             String          @id @default(uuid())
+  date           DateTime
+  type           InteractionType
+  notes          String?
+  next_step_date DateTime?
+  contactId      String
+  contact        Contact         @relation(fields: [contactId], references: [id])
+}
+
+model TimeBlock {
+  id          String    @id @default(uuid())
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  isCompleted Boolean   @default(false)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  focusAreaId String
+  focusArea   FocusArea @relation(fields: [focusAreaId], references: [id])
+  goalId      String?
+  goal        Goal?     @relation(fields: [goalId], references: [id])
+}
